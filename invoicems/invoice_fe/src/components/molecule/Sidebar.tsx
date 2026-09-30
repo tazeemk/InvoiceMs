@@ -17,6 +17,7 @@ import {
   User,
   Tags,
   ClipboardCheck,
+  ClipboardList,
   Clock,
   CheckCircle2,
   Loader2,
@@ -72,6 +73,7 @@ const menuItems = [
     title: "Orders",
     icon: ShoppingCart,
     children: [
+      { title: "Created Orders", url: "/orders/created", icon: ClipboardList },
       { title: "In Progress Orders", url: "/orders/in-progress", icon: Loader2 },
       { title: "Completed Orders", url: "/orders/completed", icon: ClipboardCheck },
     ],

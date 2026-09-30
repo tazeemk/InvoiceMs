@@ -24,9 +24,6 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.customerCode.trim()) {
-      newErrors.customerCode = "Customer code is required";
-    }
     if (!formData.businessName.trim()) {
       newErrors.businessName = "Business name is required";
     }
@@ -35,11 +32,6 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     }
     if (!formData.mobile.trim()) {
       newErrors.mobile = "Mobile number is required";
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
     }
     if (!formData.address.trim()) {
       newErrors.address = "Address is required";
@@ -59,6 +51,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     if (validateForm()) {
       onSave({
         ...formData,
+        customerCode: formData.customerCode.trim() || `CUS-${Date.now()}`,
         updatedAt: new Date().toISOString().split('T')[0]
       });
       onBack();
@@ -114,16 +107,6 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               <p className="text-xs text-gray-500 mt-1">Customer ID cannot be changed</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Code <span className="text-red-500">*</span></label>
-              <Input
-                value={formData.customerCode}
-                onChange={(e) => setFormData({ ...formData, customerCode: e.target.value })}
-                placeholder="Enter customer code"
-                className={errors.customerCode ? "border-red-500 py-2 rounded-[8px]" : "py-2 rounded-[8px]"}
-              />
-              {errors.customerCode && <p className="text-xs text-red-500 mt-1">{errors.customerCode}</p>}
-            </div>
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Business Name <span className="text-red-500">*</span></label>
               <Input
                 value={formData.businessName}
@@ -154,31 +137,11 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               {errors.mobile && <p className="text-xs text-red-500 mt-1">{errors.mobile}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Enter email address"
-                className={errors.email ? "border-red-500 py-2 rounded-[8px]" : "py-2 rounded-[8px]"}
-              />
-              {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
-            </div>
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">GSTIN</label>
               <Input
                 value={formData.gstin}
                 onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
                 placeholder="Enter GSTIN"
-                className="py-2 rounded-[8px]"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PAN</label>
-              <Input
-                value={formData.pan}
-                onChange={(e) => setFormData({ ...formData, pan: e.target.value })}
-                placeholder="Enter PAN"
                 className="py-2 rounded-[8px]"
               />
             </div>
@@ -307,12 +270,10 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
             }`}>
               {formData.status}
             </span>
-            <span className="text-sm text-gray-500">Code: {formData.customerCode}</span>
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">{formData.businessName}</h3>
           <p className="text-gray-600 mb-2">Contact: {formData.contactPerson}</p>
           <p className="text-gray-600 mb-2">Mobile: {formData.mobile}</p>
-          <p className="text-gray-600 mb-2">Email: {formData.email}</p>
           <p className="text-gray-600">{formData.city}, {formData.state}</p>
         </div>
       </div>

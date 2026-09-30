@@ -13,7 +13,7 @@ import { Invoice, CurrentPage } from "@/impData/types";
 import { InvoiceTable } from "./components/invoice-table";
 import { DeleteDialog } from "./components/delete-dialog";
 import { InvoiceForm } from "./components/invoice-form";
-import { InvoiceViewPage } from "./components/invoice-view";
+import { InvoiceViewPage } from "./components/invoice-document";
 import { Spinner } from "@/components/ui/spinner";
 import { useInvoices } from "@/hooks/useInvoices";
 import { fetchInvoices as apiFetchInvoices, createInvoice, updateInvoice, deleteInvoice } from "@/service/invoice";

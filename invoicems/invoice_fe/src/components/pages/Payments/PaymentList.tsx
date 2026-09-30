@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 
 import { Invoice, CurrentPage } from "@/impData/types";
 import { PaymentTable } from "./components/payment-table";
-import { InvoiceViewPage } from "./components/invoice-view";
+import { InvoiceViewPage } from "../Invoices/components/invoice-document";
 import { Spinner } from "@/components/ui/spinner";
 import { useInvoices } from "@/hooks/useInvoices";
 import {

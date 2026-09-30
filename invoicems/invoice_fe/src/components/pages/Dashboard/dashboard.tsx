@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { getUserRole } from "@/lib/cookies";
 import { getRolePermissions } from "@/lib/roleConfig";
+import { smClient } from "@/lib";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -422,35 +423,19 @@ export default function Dashboard() {
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const fetchByStatus = useCallback(async (apiStatus: string): Promise<{ count: number; totalAmount: number; orders: RawOrder[] }> => {
-    try {
-      const filters = apiStatus ? [{ attribute: "status", operation: "EQUALS", value: apiStatus }] : [];
-      const res = await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL || "http://192.168.1.65:8060/"}order/filterOrder`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit: 1000, filters }),
-      });
-      if (!res.ok) return { count: 0, totalAmount: 0, orders: [] };
-      const data = await res.json();
-      const orders: RawOrder[] = Array.isArray(data) ? data : [];
-      return { count: orders.length, totalAmount: orders.reduce((s, o) => s + (o.totalAmount ?? 0), 0), orders };
-    } catch {
-      return { count: 0, totalAmount: 0, orders: [] };
-    }
+    const filters = apiStatus ? [{ attribute: "status", operation: "EQUALS", value: apiStatus }] : [];
+    const response = await smClient.post("order/filterOrder", { limit: 1000, filters });
+    const orders: RawOrder[] = Array.isArray(response.data) ? response.data : [];
+    return {
+      count: orders.length,
+      totalAmount: orders.reduce((sum, order) => sum + (Number(order.totalAmount) || 0), 0),
+      orders,
+    };
   }, []);
 
   const fetchCustomers = useCallback(async (): Promise<RawCustomer[]> => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL || "http://192.168.1.65:8060/"}customers/filterCustomers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit: 1000, filters: [] }),
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
-    }
+    const response = await smClient.post("customers/filterCustomers", { limit: 1000, filters: [] });
+    return Array.isArray(response.data) ? response.data : [];
   }, []);
 
   const fetchAllMetrics = useCallback(async (isRefresh = false) => {
