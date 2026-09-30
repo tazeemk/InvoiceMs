@@ -37,34 +37,29 @@ const numberToWords = (amount: number) => {
     return parts.join(" ");
   };
 
-  const integer = Math.floor(Math.abs(Number(amount) || 0));
-  if (integer === 0) return "Zero Only";
+  const wholeAmount = Math.floor(Math.abs(Number(amount) || 0));
+  if (wholeAmount === 0) return "Zero Only";
 
   const groups = [
-    { value: Math.floor(integer / 10000000), label: "Crore" },
-    { value: Math.floor((integer % 10000000) / 100000), label: "Lakh" },
-    { value: Math.floor((integer % 100000) / 1000), label: "Thousand" },
-    { value: integer % 1000, label: "" },
+    { value: Math.floor(wholeAmount / 10000000), label: "Crore" },
+    { value: Math.floor((wholeAmount % 10000000) / 100000), label: "Lakh" },
+    { value: Math.floor((wholeAmount % 100000) / 1000), label: "Thousand" },
+    { value: wholeAmount % 1000, label: "" },
   ];
   return `${groups.filter(group => group.value > 0).map(group => `${underThousand(group.value)} ${group.label}`.trim()).join(" ")} Only`;
 };
 
 export const InvoiceViewPage: React.FC<InvoiceDocumentProps> = ({ invoice, onBack }) => {
   const items = invoice.items || [];
-  const invoiceDetails = invoice as Invoice & { stateCode?: string };
-  const taxableAmount = items.reduce(
-    (sum, item) => sum + (item.taxableAmount ?? item.quantity * item.rate),
-    0,
-  );
-  const subtotal = invoice.subtotal || taxableAmount;
+  const invoiceDetails = invoice as Invoice & { stateCode?: string; orderNumber?: string };
+  const itemsAmount = items.reduce((sum, item) => sum + (item.taxableAmount ?? item.quantity * item.rate), 0);
+  const subtotal = invoice.subtotal || itemsAmount;
   const totalTax = invoice.taxAmount || 0;
-  const cgstAmount = invoice.cgstAmount ?? totalTax / 2;
-  const sgstAmount = invoice.sgstAmount ?? totalTax / 2;
-  const igstAmount = invoice.igstAmount ?? 0;
-  const formatTaxRate = (amount: number) =>
-    subtotal > 0 && amount > 0 ? `${((amount / subtotal) * 100).toFixed(2)}%` : "";
+  const cgstAmount = Math.round(totalTax * 50) / 100;
+  const sgstAmount = totalTax - cgstAmount;
+  const grandTotal = invoice.totalAmount || subtotal + totalTax - (invoice.discountAmount || 0) + (invoice.roundOff || 0);
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  const blankRows = Math.max(0, 10 - items.length);
+  const orderNumber = invoiceDetails.orderNumber || "";
 
   return (
     <>
@@ -79,111 +74,142 @@ export const InvoiceViewPage: React.FC<InvoiceDocumentProps> = ({ invoice, onBac
 
       <main className="keyar-print-area">
         <article className="keyar-invoice">
+          <div className="keyar-copy-heading">
+            <strong>TAX INVOICE</strong>
+            <span>Original for Recipient</span>
+          </div>
+
           <header className="keyar-company-header">
-            <div className="keyar-header-meta">
-              <span>GSTIN: {companyDetails.gstin}</span>
-              <span>{companyDetails.phones.join(", ")}</span>
-            </div>
-            <KeyarLogo width={112} height={52} className="keyar-logo" />
-            <h1>{companyDetails.name}</h1>
-            <p className="keyar-company-address">
-              {companyDetails.addressLines.map((line) => <span key={line}>{line}</span>)}
-            </p>
-            <p className="keyar-company-contact">Phone: {companyDetails.phones.join(", ")}</p>
-            <div className="keyar-invoice-heading">
-              <span>Invoice No.: {invoice.invoiceNumber}</span>
-              <strong>TAX INVOICE</strong>
-              <span>Date: {formatDate(invoice.invoiceDate)}</span>
+            <div className="keyar-issuer">
+              <KeyarLogo width={82} height={48} className="keyar-logo" />
+              <div>
+                <h1>{companyDetails.name}</h1>
+                <p className="keyar-company-address">
+                  {companyDetails.addressLines.map(line => <span key={line}>{line}</span>)}
+                </p>
+                <p className="keyar-company-contact">GSTIN: {companyDetails.gstin}</p>
+                <p className="keyar-company-contact">Phone: {companyDetails.phones.join(", ")}</p>
+              </div>
             </div>
           </header>
 
-          <section className="keyar-customer-details" aria-label="Customer details">
-            <p><strong>Name:</strong><span>{invoice.customerName}</span></p>
-            <p><strong>Address:</strong><span>{invoice.billingAddress || ""}</span></p>
-            <p><strong>GSTIN Unique:</strong><span>{invoice.gstin || ""}</span></p>
-            <p className="keyar-customer-inline">
-              <strong>State:</strong><span>{invoice.state || ""}</span>
-              <strong>State Code:</strong><span>{invoiceDetails.stateCode || invoice.gstin?.slice(0, 2) || ""}</span>
-              <strong>Mob:</strong><span>{invoice.mobile || ""}</span>
-            </p>
+          <section className="keyar-parties" aria-label="Invoice parties and references">
+            <div className="keyar-party-block">
+              <h2>Buyer (Bill To)</h2>
+              <p><strong>{invoice.customerName}</strong></p>
+              <p>{invoice.billingAddress || ""}</p>
+              <p>GSTIN/UIN: {invoice.gstin || ""}</p>
+              <p>State Name: {invoice.state || ""}{invoice.gstin ? `, Code: ${invoiceDetails.stateCode || invoice.gstin.slice(0, 2)}` : ""}</p>
+              <p>Contact: {invoice.contactPerson || ""}{invoice.mobile ? ` | ${invoice.mobile}` : ""}</p>
+            </div>
+            <div className="keyar-reference-block keyar-invoice-reference">
+              <div><strong>Invoice No.</strong><span>{invoice.invoiceNumber}</span></div>
+              <div><strong>Dated</strong><span>{formatDate(invoice.invoiceDate)}</span></div>
+              <div><strong>Reference No. &amp; Date</strong><span>{orderNumber}</span></div>
+              <div><strong>Other References</strong><span>{invoice.notes || ""}</span></div>
+            </div>
+            <div className="keyar-party-block">
+              <h2>Consignee (Ship To)</h2>
+              <p><strong>{invoice.customerName}</strong></p>
+              <p>{invoice.shippingAddress || invoice.billingAddress || ""}</p>
+              <p>GSTIN/UIN: {invoice.gstin || ""}</p>
+              <p>State Name: {invoice.state || ""}{invoice.gstin ? `, Code: ${invoiceDetails.stateCode || invoice.gstin.slice(0, 2)}` : ""}</p>
+            </div>
+            <div className="keyar-reference-block">
+              <div><strong>Buyer's Order No.</strong><span>{orderNumber || invoice.orderId || ""}</span></div>
+              <div><strong>Due Date</strong><span>{formatDate(invoice.dueDate)}</span></div>
+              <div><strong>Terms of Delivery</strong><span>{invoice.termsConditions || ""}</span></div>
+              <div><strong>Status</strong><span>{invoice.status}</span></div>
+              <div><strong>Balance Due</strong><span>{formatAmount(invoice.outstandingAmount)}</span></div>
+            </div>
           </section>
 
           <table className="keyar-items-table">
             <colgroup>
+              <col className="keyar-serial-column" />
               <col className="keyar-description-column" />
               <col className="keyar-hsn-column" />
               <col className="keyar-quantity-column" />
-              <col className="keyar-unit-column" />
               <col className="keyar-rate-column" />
+              <col className="keyar-unit-column" />
+              <col className="keyar-discount-column" />
               <col className="keyar-amount-column" />
             </colgroup>
             <thead>
               <tr>
+                <th>Sl.</th>
                 <th>Description of Goods</th>
-                <th>HSN Code</th>
-                <th>Weight / Qty</th>
-                <th>Unit</th>
+                <th>HSN/SAC</th>
+                <th>Quantity</th>
                 <th>Rate</th>
-                <th>Amount<br />Rs. / P.</th>
+                <th>Per</th>
+                <th>Disc. %</th>
+                <th>Amount</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, index) => (
                 <tr key={item.id || `${item.itemName}-${index}`}>
-                  <td>{item.itemName}{item.description ? <small>{item.description}</small> : null}</td>
+                  <td className="keyar-center">{index + 1}</td>
+                  <td><strong>{item.itemName}</strong>{item.description ? <small>{item.description}</small> : null}</td>
                   <td className="keyar-center">{item.hsnCode || ""}</td>
-                  <td className="keyar-center">{item.quantity}</td>
-                  <td className="keyar-center">{item.unit || ""}</td>
+                  <td className="keyar-number">{Number(item.quantity) || 0}</td>
                   <td className="keyar-number">{formatAmount(item.rate)}</td>
-                  <td className="keyar-number">{formatAmount(item.totalAmount)}</td>
+                  <td className="keyar-center">{item.unit || ""}</td>
+                  <td className="keyar-number">{formatAmount(item.discountPercent)}</td>
+                  <td className="keyar-number">{formatAmount(item.taxableAmount ?? item.quantity * item.rate)}</td>
                 </tr>
               ))}
-              {Array.from({ length: blankRows }, (_, index) => (
+              {Array.from({ length: Math.max(0, 8 - items.length) }, (_, index) => (
                 <tr className="keyar-blank-row" key={`blank-${index}`}>
-                  <td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td>
+                  {Array.from({ length: 8 }, (_, cellIndex) => <td key={cellIndex}>{cellIndex === 1 ? "\u00a0" : ""}</td>)}
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
+                <td></td>
                 <td><strong>Total</strong></td>
                 <td></td>
-                <td className="keyar-center"><strong>{totalQuantity}</strong></td>
-                <td></td>
-                <td></td>
-                <td className="keyar-number"><strong>{formatAmount(invoice.totalAmount)}</strong></td>
+                <td className="keyar-number"><strong>{totalQuantity}</strong></td>
+                <td></td><td></td><td></td>
+                <td className="keyar-number"><strong>{formatAmount(itemsAmount)}</strong></td>
               </tr>
             </tfoot>
           </table>
 
           <section className="keyar-totals">
-            <div className="keyar-words-block">
-              <strong>Amount in Words</strong>
-              <p>Rupees {numberToWords(invoice.totalAmount)}</p>
+            <div className="keyar-tax-ledger">
+              <strong>Tax Summary</strong>
+              <div><span>Taxable Amount</span><span>{formatAmount(subtotal)}</span></div>
+              <div><span>CGST A/C</span><span>{formatAmount(cgstAmount)}</span></div>
+              <div><span>SGST A/C</span><span>{formatAmount(sgstAmount)}</span></div>
+              <div className="keyar-total-tax"><strong>Total Tax</strong><strong>{formatAmount(totalTax)}</strong></div>
             </div>
             <div className="keyar-tax-block">
-              <div><strong>Taxable Value</strong><span>{formatAmount(subtotal)}</span></div>
-              <div><strong>SGST</strong><span>{formatTaxRate(sgstAmount)}</span><span>{formatAmount(sgstAmount)}</span></div>
-              <div><strong>CGST</strong><span>{formatTaxRate(cgstAmount)}</span><span>{formatAmount(cgstAmount)}</span></div>
-              <div><strong>IGST</strong><span>{formatTaxRate(igstAmount)}</span><span>{formatAmount(igstAmount)}</span></div>
-              <div><strong>Total GST</strong><span></span><span>{formatAmount(totalTax)}</span></div>
-              <div className="keyar-grand-total"><strong>Grand Total</strong><strong>{formatAmount(invoice.totalAmount)}</strong></div>
+              <div><strong>Sub-total</strong><span>{formatAmount(subtotal)}</span></div>
+              {invoice.discountAmount > 0 && <div><strong>Discount</strong><span>-{formatAmount(invoice.discountAmount)}</span></div>}
+              <div><strong>GST</strong><span>{formatAmount(totalTax)}</span></div>
+              <div className="keyar-grand-total"><strong>Grand Total</strong><strong>{formatAmount(grandTotal)}</strong></div>
+              <div className="keyar-amount-words"><strong>Amount in Words</strong><span>Rupees {numberToWords(grandTotal)}</span></div>
             </div>
           </section>
 
           <footer className="keyar-invoice-footer">
             <div className="keyar-bank-details">
+              <strong>Our Bank Details</strong>
               <p><strong>A/C Holder Name:</strong> {companyDetails.name}</p>
               <p><strong>Bank Name:</strong> {companyDetails.bank}</p>
               <p><strong>Branch:</strong> {companyDetails.branch}</p>
               <p><strong>Bank A/C No:</strong> {companyDetails.accountNumber}</p>
               <p><strong>IFSC Code:</strong> {companyDetails.ifsc}</p>
-              <p className="keyar-note">Note: All disputes are subject to Jaunpur jurisdiction only.</p>
+              <p className="keyar-note">Subject to Jaunpur jurisdiction only.</p>
             </div>
             <div className="keyar-signature">
               <span>For, {companyDetails.name}</span>
               <div className="keyar-signature-space" />
               <strong>Authorised Signatory</strong>
+              <span className="keyar-computer-generated">This is a computer generated invoice</span>
             </div>
           </footer>
         </article>
@@ -201,179 +227,170 @@ export const InvoiceViewPage: React.FC<InvoiceDocumentProps> = ({ invoice, onBac
           box-sizing: border-box;
           width: min(100%, 210mm);
           margin: 0 auto;
-          padding: 7mm;
+          padding: 8mm;
           background: #fff;
         }
         .keyar-invoice {
-          --invoice-green: #71904d;
           box-sizing: border-box;
-          min-height: 280mm;
-          border: 1.5px solid var(--invoice-green);
-          color: #20231d;
+          min-height: 276mm;
+          border: 1px solid #777;
+          color: #111;
           background: #fff;
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 10px;
-          line-height: 1.25;
-        }
-        .keyar-company-header {
-          position: relative;
-          min-height: 42mm;
-          padding: 4mm 5mm 0;
-          border-bottom: 1.5px solid var(--invoice-green);
-          text-align: center;
-        }
-        .keyar-header-meta {
-          display: flex;
-          justify-content: space-between;
-          color: #26351c;
           font-size: 9px;
+          line-height: 1.2;
+        }
+        .keyar-copy-heading {
+          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 9mm;
+          border-bottom: 1px solid #777;
+          font-size: 13px;
           font-weight: 700;
         }
-        .keyar-logo {
-          display: block;
-          margin: -1mm auto 0;
-          object-fit: contain;
+        .keyar-copy-heading span {
+          position: absolute;
+          right: 4mm;
+          font-size: 8px;
+          font-style: italic;
+          font-weight: 400;
         }
+        .keyar-company-header {
+          min-height: 31mm;
+          padding: 3mm;
+          border-bottom: 1px solid #777;
+        }
+        .keyar-issuer {
+          display: grid;
+          grid-template-columns: 22mm minmax(0, 1fr);
+          align-items: center;
+          gap: 3mm;
+        }
+        .keyar-logo { display: block; object-fit: contain; }
         .keyar-company-header h1 {
-          margin: 0;
-          color: #bd5a4d;
-          font-size: 16px;
+          margin: 0 0 1mm;
+          font-size: 13px;
           font-weight: 700;
         }
         .keyar-company-address {
-          margin: 1mm 0;
+          margin: 0 0 1mm;
           font-size: 8px;
-          line-height: 1.2;
+          line-height: 1.25;
         }
         .keyar-company-address span { display: block; }
-        .keyar-company-contact {
-          margin: 1mm 0 2mm;
-          font-size: 9px;
+        .keyar-company-contact { margin: 0.5mm 0; font-size: 8px; }
+        .keyar-parties { display: grid; grid-template-columns: 1fr 1fr; }
+        .keyar-party-block,
+        .keyar-reference-block {
+          min-height: 31mm;
+          border-bottom: 1px solid #777;
         }
-        .keyar-invoice-heading {
+        .keyar-party-block { padding: 2mm; border-right: 1px solid #777; }
+        .keyar-party-block h2 { margin: 0 0 1mm; font-size: 9px; font-weight: 700; }
+        .keyar-party-block p { margin: 0.8mm 0; overflow-wrap: anywhere; }
+        .keyar-party-block p strong { font-size: 9px; font-weight: 700; }
+        .keyar-reference-block {
           display: grid;
-          grid-template-columns: 1fr auto 1fr;
+          grid-template-rows: repeat(5, minmax(0, 1fr));
+        }
+        .keyar-invoice-reference { grid-template-rows: repeat(4, minmax(0, 1fr)); }
+        .keyar-reference-block > div {
+          display: grid;
+          grid-template-columns: 42% 58%;
           align-items: center;
-          min-height: 9mm;
-          border-top: 1px solid var(--invoice-green);
-          text-align: left;
-          font-size: 10px;
+          gap: 1mm;
+          padding: 1mm 2mm;
+          border-bottom: 1px solid #aaa;
+          overflow-wrap: anywhere;
         }
-        .keyar-invoice-heading strong {
-          color: #bd5a4d;
-          font-size: 14px;
-        }
-        .keyar-invoice-heading span:last-child { text-align: right; }
-        .keyar-customer-details {
-          padding: 3mm 5mm 2mm;
-          border-bottom: 1px solid var(--invoice-green);
-        }
-        .keyar-customer-details p {
-          display: flex;
-          gap: 6px;
-          min-height: 6mm;
-          margin: 0;
-          border-bottom: 1px dotted #a5ad9b;
-          align-items: center;
-        }
-        .keyar-customer-details p strong { flex: 0 0 auto; }
-        .keyar-customer-details p span { flex: 1; }
-        .keyar-customer-inline { gap: 5px !important; }
-        .keyar-customer-inline strong:not(:first-child) { margin-left: 8px; }
+        .keyar-reference-block > div:last-child { border-bottom: 0; }
+        .keyar-reference-block > div strong { font-weight: 700; }
+        .keyar-reference-block > div span { min-width: 0; }
         .keyar-items-table {
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          font-size: 9px;
+          font-size: 8.5px;
         }
         .keyar-items-table th,
         .keyar-items-table td {
-          padding: 1.5mm 1mm;
-          border-right: 1px solid #8c9b79;
-          border-bottom: 1px solid #a7b198;
-          vertical-align: middle;
+          padding: 1.2mm 0.8mm;
+          border-right: 1px solid #999;
+          border-bottom: 1px solid #999;
+          vertical-align: top;
+          overflow-wrap: anywhere;
         }
         .keyar-items-table th {
-          height: 11mm;
-          background: #d5e0c7;
-          color: #26351c;
-          font-weight: 700;
+          height: 9mm;
           text-align: center;
+          vertical-align: middle;
+          font-weight: 700;
         }
-        .keyar-items-table td:first-child,
-        .keyar-items-table th:first-child { text-align: left; }
-        .keyar-description-column { width: 39%; }
-        .keyar-hsn-column { width: 12%; }
-        .keyar-quantity-column { width: 14%; }
-        .keyar-unit-column { width: 9%; }
+        .keyar-items-table td:nth-child(2),
+        .keyar-items-table th:nth-child(2) { text-align: left; }
+        .keyar-items-table td:nth-child(2) > strong { font-size: 8.5px; font-weight: 700; }
+        .keyar-items-table td:nth-child(9) { font-weight: 700; }
+        .keyar-serial-column { width: 5%; }
+        .keyar-description-column { width: 30%; }
+        .keyar-hsn-column { width: 11%; }
+        .keyar-quantity-column { width: 13%; }
         .keyar-rate-column { width: 12%; }
+        .keyar-unit-column { width: 8%; }
+        .keyar-discount-column { width: 7%; }
         .keyar-amount-column { width: 14%; }
-        .keyar-items-table td small {
-          display: block;
-          margin-top: 1px;
-          color: #59624f;
-        }
+        .keyar-items-table td small { display: block; margin-top: 1px; color: #444; }
         .keyar-center { text-align: center; }
         .keyar-number { text-align: right; white-space: nowrap; }
-        .keyar-blank-row { height: 9mm; }
-        .keyar-items-table tfoot td {
-          height: 8mm;
-          background: #eef2e8;
-        }
+        .keyar-blank-row { height: 8mm; }
+        .keyar-items-table tfoot td { height: 8mm; vertical-align: middle; font-weight: 700; }
         .keyar-totals {
           display: grid;
-          grid-template-columns: 1fr 0.9fr;
-          min-height: 31mm;
-          border-bottom: 1px solid var(--invoice-green);
+          grid-template-columns: 1fr 0.8fr;
+          min-height: 34mm;
+          border-bottom: 1px solid #777;
         }
-        .keyar-words-block {
-          padding: 4mm;
-          border-right: 1px solid var(--invoice-green);
+        .keyar-tax-ledger { padding: 2mm; border-right: 1px solid #777; }
+        .keyar-tax-ledger > strong { display: block; margin-bottom: 2mm; font-size: 9px; font-weight: 700; }
+        .keyar-tax-ledger > div { display: flex; justify-content: space-between; margin: 1mm 0; }
+        .keyar-tax-ledger .keyar-total-tax {
+          margin-top: 2mm;
+          padding-top: 1mm;
+          border-top: 1px solid #777;
         }
-        .keyar-words-block p {
-          min-height: 11mm;
-          margin: 3mm 0 0;
-          border-bottom: 1px dotted #a5ad9b;
+        .keyar-tax-block {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          padding: 2mm;
         }
-        .keyar-tax-block > div {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 14mm 24mm;
-          min-height: 5mm;
-          padding: 1mm 3mm;
-          border-bottom: 1px solid #d4dacd;
-        }
-        .keyar-tax-block > div span { text-align: right; }
-        .keyar-grand-total {
-          background: #d5e0c7;
-        }
-        .keyar-invoice-footer {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          min-height: 31mm;
-        }
-        .keyar-bank-details {
-          padding: 3mm;
-          border-right: 1px solid var(--invoice-green);
-          font-size: 8px;
-        }
-        .keyar-bank-details p { margin: 1mm 0; }
-        .keyar-note {
-          margin: 3mm -3mm -3mm !important;
-          padding: 2mm 3mm;
-          background: #d5e0c7;
-          color: #445535;
+        .keyar-tax-block > div { display: flex; justify-content: space-between; gap: 2mm; margin: 1mm 0; }
+        .keyar-tax-block .keyar-grand-total {
+          margin-top: 1mm;
+          padding-top: 1.5mm;
+          border-top: 1px solid #777;
+          font-size: 10px;
           font-weight: 700;
         }
+        .keyar-tax-block .keyar-amount-words { display: block; margin-top: 2mm; font-size: 8px; }
+        .keyar-amount-words span { display: block; margin-top: 1mm; }
+        .keyar-invoice-footer { display: grid; grid-template-columns: 1fr 1fr; min-height: 27mm; }
+        .keyar-bank-details { padding: 2mm; border-right: 1px solid #777; font-size: 7px; }
+        .keyar-bank-details > strong { display: block; margin-bottom: 1mm; }
+        .keyar-bank-details p { margin: 0.8mm 0; }
+        .keyar-note { margin-top: 2mm !important; font-weight: 600; }
         .keyar-signature {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
           justify-content: space-between;
-          padding: 3mm;
+          padding: 2mm;
           text-align: right;
-          font-size: 9px;
+          font-size: 7px;
         }
-        .keyar-signature-space { flex: 1; min-height: 16mm; }
+        .keyar-signature-space { flex: 1; min-height: 15mm; }
+        .keyar-computer-generated { align-self: center; margin-top: 2mm; }
         @media print {
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; background: #fff !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
@@ -385,14 +402,14 @@ export const InvoiceViewPage: React.FC<InvoiceDocumentProps> = ({ invoice, onBac
             inset: 0;
             width: 210mm;
             height: 297mm;
-            padding: 6mm;
+            padding: 10mm;
             margin: 0;
           }
-          .keyar-invoice { min-height: 285mm; }
+          .keyar-invoice { min-height: 277mm; }
         }
         @media screen and (max-width: 640px) {
           .keyar-print-area { padding: 8px; overflow-x: auto; }
-          .keyar-invoice { min-width: 620px; }
+          .keyar-invoice { min-width: 700px; }
           .keyar-screen-actions { padding: 0 8px; }
         }
       `}</style>
