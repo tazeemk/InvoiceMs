@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 230" role="img" aria-labelledby="title description">
+  <title id="title">Keyar</title>
+  <desc id="description">Keyar wordmark in orange, blue, and green with the tagline A Clean Place Is A Safe Place.</desc>
+  <path d="M198 25h374c18 0 29 10 29 25s-12 25-29 25H198c-15 0-25-10-25-25s10-25 25-25Z" fill="#fff" stroke="#d982a0" stroke-width="4"/>
+  <text x="205" y="60" fill="#181818" font-family="Georgia,serif" font-size="24" font-weight="700">A Clean Place Is A Safe Place...</text>
+  <text x="187" y="170" fill="#123e7b" stroke="#fff" stroke-linejoin="round" stroke-width="10" paint-order="stroke" font-family="Arial,sans-serif" font-size="120" font-weight="900" letter-spacing="-7">EYAR</text>
+  <path d="m37 168 29-105c3-10 9-17 20-21l34-12-25 91 73-74c9-9 18-12 29-10l28 6-77 73 59 56-39 5-47-46-37 47Z" fill="#ed7100" stroke="#fff" stroke-linejoin="round" stroke-width="10" paint-order="stroke"/>
+  <path d="M184 192h403" stroke="#008e57" stroke-linecap="round" stroke-width="9"/>
+  <path d="M190 192h198" stroke="#ed7100" stroke-linecap="round" stroke-width="9"/>
+  <path d="M442 100c0 0-16 19-16 31a16 16 0 0 0 32 0c0-12-16-31-16-31Z" fill="#22a6dc" stroke="#fff" stroke-width="4"/>
+  <path d="M438 125c-3 4-4 8-2 11" fill="none" stroke="#c8f4ff" stroke-linecap="round" stroke-width="4"/>
+  <g fill="#fff" stroke="#123e7b" stroke-width="3">
+    <circle cx="585" cy="89" r="7"/><circle cx="602" cy="96" r="5"/><circle cx="578" cy="105" r="4"/>
+    <circle cx="591" cy="112" r="4"/><circle cx="608" cy="108" r="3"/>
+  </g>
+</svg>

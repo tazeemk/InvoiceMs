@@ -1,0 +1,61 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: invoice_ms_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: Root@123
+      MYSQL_DATABASE: invoice_ms
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pRoot@123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ./Invoice_be/invoice
+      dockerfile: Dockerfile
+    container_name: invoice_ms_backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/invoice_ms
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Root@123
+      SERVER_PORT: 8060
+      JAVA_OPTS: "-Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "8060:8060"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8060/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./invoice_fe
+      dockerfile: Dockerfile
+    container_name: invoice_ms_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_APP_BASE_URL: http://192.168.1.63:8060
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
