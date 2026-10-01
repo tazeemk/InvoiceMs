@@ -79,6 +79,7 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Customer ID</TableHead>
             <TableHead>Customer Code</TableHead>
             <TableHead>Business Name</TableHead>
             <TableHead>Contact Person</TableHead>
@@ -94,6 +95,7 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
           {customers.length > 0 ? (
             customers.map((customer) => (
               <TableRow key={customer.id}>
+                <TableCell className="font-medium">{customer.id}</TableCell>
                 <TableCell className="font-medium">{customer.customerCode}</TableCell>
                 <TableCell>{customer.businessName}</TableCell>
                 <TableCell>{customer.contactPerson}</TableCell>
@@ -109,7 +111,7 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+              <TableCell colSpan={10} className="text-center text-gray-500 py-8">
                 No customers found
               </TableCell>
             </TableRow>

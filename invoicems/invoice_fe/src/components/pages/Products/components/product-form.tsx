@@ -34,7 +34,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       newErrors.productName = "Product name is required";
     }
     if (!formData.productCode.trim()) {
-      newErrors.productCode = "Product code is required";
+      newErrors.productCode = "HSN/SAC code is required";
     }
     if (!formData.categoryId.trim()) {
       newErrors.categoryId = "Category ID is required";
@@ -177,11 +177,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product Code <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">HSN/SAC Code <span className="text-red-500">*</span></label>
               <Input
                 value={formData.productCode}
                 onChange={(e) => setFormData({ ...formData, productCode: e.target.value })}
-                placeholder="Enter product code"
+                placeholder="Enter HSN/SAC code"
                 className={errors.productCode ? "border-red-500 py-2 rounded-[8px]" : "py-2 rounded-[8px]"}
               />
               {errors.productCode && <p className="text-xs text-red-500 mt-1">{errors.productCode}</p>}

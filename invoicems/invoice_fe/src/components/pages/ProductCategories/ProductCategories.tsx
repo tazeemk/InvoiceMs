@@ -7,6 +7,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 
 // Import types and data
 import { Category, SortField, SortDirection, CurrentPage } from "@/impData/types";
+import { getProductCategories } from "@/service/product";
 
 // Import components
 import { CategoryTable } from "./components/category-table";
@@ -36,42 +37,19 @@ export default function ProductCategories() {
     let mounted = true;
     const fetchCategories = async () => {
       try {
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL || "http://192.168.1.65:8060/"}category/getAllCategories`);
-        if (!resp.ok) {
-          console.error("Failed fetching categories", resp.status);
-          return;
-        }
-        const data = await resp.json();
+        const data = await getProductCategories();
+        const mapped: Category[] = data.map((category) => ({
+          id: category.categoryId,
+          name: category.categoryName,
+          description: category.description ?? "",
+          status: category.status === "ACTIVE" ? "Active" : "Inactive",
+          productCount: 0,
+          createdBy: category.createdBy ?? "",
+          createdAt: category.createdDate ?? undefined,
+          updatedAt: category.lastModifiedDate ?? undefined,
+        }));
 
-        // Expecting an array of category objects from API
-        if (Array.isArray(data)) {
-          const mapped: Category[] = data.map((c: any) => ({
-            id: c.categoryId ?? c.id ?? String(Math.random()),
-            name: c.categoryName ?? c.categoryName ?? c.name ?? "",
-            description: c.description ?? "",
-            status: (c.status === "ACTIVE" ? "Active" : "Inactive") as Category["status"],
-            productCount: c.productCount ?? 0,
-            createdBy: c.createdBy ?? "",
-            createdAt: c.createdDate ?? c.createdAt ?? undefined,
-            updatedAt: c.lastModifiedDate ?? c.updatedAt ?? undefined,
-          }));
-
-          if (mounted) setCategories(mapped);
-        } else if (data && typeof data === "object") {
-          // If the API returns a single object, map it as a single-item array
-          const c = data as any;
-          const mapped: Category = {
-            id: c.categoryId ?? c.id ?? String(Math.random()),
-            name: c.categoryName ?? c.name ?? "",
-            description: c.description ?? "",
-            status: (c.status === "ACTIVE" ? "Active" : "Inactive") as Category["status"],
-            productCount: c.productCount ?? 0,
-            createdBy: c.createdBy ?? "",
-            createdAt: c.createdDate ?? c.createdAt ?? undefined,
-            updatedAt: c.lastModifiedDate ?? c.updatedAt ?? undefined,
-          };
-          if (mounted) setCategories([mapped]);
-        }
+        if (mounted) setCategories(mapped);
       } catch (err) {
         console.error("Error fetching categories", err);
       }

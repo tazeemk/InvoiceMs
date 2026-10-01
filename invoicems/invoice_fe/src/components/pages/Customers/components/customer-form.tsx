@@ -103,8 +103,10 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           <div className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer ID</label>
-              <Input value={formData.id} disabled className="bg-gray-50 py-2 rounded-[8px]" />
-              <p className="text-xs text-gray-500 mt-1">Customer ID cannot be changed</p>
+              <Input value={formData.id || (isAddPage ? "Generated after save" : "")} disabled className="bg-gray-50 py-2 rounded-[8px]" />
+              <p className="text-xs text-gray-500 mt-1">
+                {isAddPage ? "Customer ID is generated automatically when the customer is saved" : "Customer ID cannot be changed"}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Business Name <span className="text-red-500">*</span></label>

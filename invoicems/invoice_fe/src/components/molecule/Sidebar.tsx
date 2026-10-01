@@ -73,6 +73,8 @@ const menuItems = [
     title: "Orders",
     icon: ShoppingCart,
     children: [
+      { title: "All Orders", url: "/orders/all", icon: ShoppingCart },
+      { title: "Cancelled Orders", url: "/orders/cancelled", icon: XCircle },
       { title: "Created Orders", url: "/orders/created", icon: ClipboardList },
       { title: "In Progress Orders", url: "/orders/in-progress", icon: Loader2 },
       { title: "Completed Orders", url: "/orders/completed", icon: ClipboardCheck },

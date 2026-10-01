@@ -31,6 +31,8 @@ import com.ims.order.repository.OrderRepository;
 import com.ims.order.servic.OrderService;
 import com.ims.orderItem.entity.OrderItemEntity;
 import com.ims.orderItem.repository.OrderItemRepository;
+import com.ims.product.entity.ProductEntity;
+import com.ims.repository.ProductRepository;
 
 
 
@@ -55,6 +57,9 @@ public class OrderServiceImpl implements OrderService
 	 
 	 @Autowired
 	 private InvoiceItemsRepository invoiceItemsRepository;
+	 
+	 @Autowired
+	 private ProductRepository productRepository;
 
 	
 	@SuppressWarnings("unused")
@@ -319,12 +324,15 @@ public class OrderServiceImpl implements OrderService
 				invoiceItem.setId(UUID.randomUUID().toString().substring(0, 20));
 				invoiceItem.setInvoiceId(savedInvoice.getId());
 				invoiceItem.setLineNo(lineNo++);
+				ProductEntity product = productRepository
+						.findFirstByProductNameIgnoreCase(orderItem.getProduct())
+						.orElse(null);
 				
 				// Set item details from order item
 				invoiceItem.setItemCode(orderItem.getProduct());
 				invoiceItem.setItemName(orderItem.getProduct());
 				invoiceItem.setDescription("From Order: " + order.getOrderNumber());
-				invoiceItem.setHsnCode("");
+				invoiceItem.setHsnCode(product != null ? product.getProductCode() : "");
 				
 				// Set quantities and amounts
 				invoiceItem.setQuantity(BigDecimal.valueOf(orderItem.getQuantity()));

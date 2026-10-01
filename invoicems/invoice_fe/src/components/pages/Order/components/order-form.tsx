@@ -10,6 +10,8 @@ import { createOrder, CreateOrderDTO } from '@/service/order';
 import { getAllProducts } from '@/service/product';
 import { useToast } from '@/components/ui/use-toast';
 
+const DEFAULT_RETAILER_NAME = "NAMASTE SS INTERNATIONAL Pvt. Ltd";
+
 interface OrderFormProps {
  order: Order; 
   orderItems?: OrderItem[];
@@ -46,7 +48,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
   const [formData, setFormData] = useState<Order>({
     orderNumber: initialOrderNumber,
-    retailer: order?.retailer || '',
+    retailer: order?.retailer || (isAddPage ? DEFAULT_RETAILER_NAME : ''),
     salesperson: order?.salesperson || '',
     customer: order?.customer || '',
     orderDate: order?.orderDate || '',
